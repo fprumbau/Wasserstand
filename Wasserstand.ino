@@ -466,14 +466,14 @@ void handleEvent1(AceButton* /* button */, uint8_t eventType, uint8_t /* buttonS
         tmpPegelLimit++;    
         Serial.print(F("Raising tmpPegelLimit to "));
         Serial.println(tmpPegelLimit);             
-        lcdStr(LINE_1, tmpPegelLimit);   
+        lcdStr(LINE_2, tmpPegelLimit);   
       }
       passed = lastHell - setTempLimit;
       if(tempSet && (passed < KONFIG_TIME)) {
         tmpTempLimit++;
         Serial.print(F("Raising tmpTempLimit to "));
         Serial.println(tmpTempLimit); 
-        lcdStr(LINE_1, tmpTempLimit);    
+        lcdStr(LINE_2, tmpTempLimit);    
       }
       break;    
     case AceButton::kEventLongPressed:
@@ -622,5 +622,3 @@ void lcdStr(int line, String str) {
   lcd.print(str);
   for(int i = str.length(); i<16;i++) lcd.print(' ');
 }
-
-
