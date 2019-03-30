@@ -15,7 +15,7 @@ using namespace ace_button;
 #define ECHO_PIN 5
 #define ARDUINO_RX 10
 #define ARDUINO_TX 11
-#define MAX_DIST 250
+#define MAX_DIST 194 //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
 #define PHYST 3  //dann schaltet Relais wieder (z.B. bei Limit 67 wäre dies 67 + 3 = 70cm)
 #define THYST 2 //ist die Temperatur um 2Grad unter die Grenze gefallen, wird wieder eingeschaltet
 #define pinDHT22 7
@@ -31,7 +31,7 @@ using namespace ace_button;
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
 
-int PLIM = 66; //cm Wasser, wenn der Sensor 250cm über Grund aufgehängt wurde
+int PLIM = 66; //cm Wasser, wenn der Sensor 350cm über Grund aufgehängt wurde
 int TLIM = 40; //Grad Celsius
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display  
@@ -215,8 +215,7 @@ void loop() {
 
 void checkValues() { 
 
-  StaticJsonBuffer<300> jsonBuffer; //letzte Zaehlung: 114
-  JsonObject& root = jsonBuffer.createObject();
+  StaticJsonDocument<300> doc; //letzte Zaehlung: 114
 
   if(debug) {
     Serial.print("+");
@@ -235,8 +234,8 @@ void checkValues() {
   
   byte pegel = (byte) rcm;
 
-  root["p"]=pegel;
-  root["PL"]=PLIM;
+  doc["p"]=pegel;
+  doc["PL"]=PLIM;
 
   bool send = false;
   bool skipCheckTemperature = false;
@@ -307,7 +306,7 @@ void checkValues() {
     float fl = pi * 0.75 * 0.75;
     float height = ((float)rcm) / 100.0;
     float vol = fl * height;
-    root["v"]=String(vol,2);
+    doc["v"]=String(vol,2);
     
     s1 += "| ";
     s1 += vol;
@@ -342,9 +341,9 @@ void checkValues() {
     s2 += "C";
   } 
   
-  root["t"]=temperature;
-  root["TL"]=TLIM;
-  root["h"]=humidity;
+  doc["t"]=temperature;
+  doc["TL"]=TLIM;
+  doc["h"]=humidity;
 
   //Die Temperatur wird nur dann ueberwacht, wenn 
   // das Pump Strom bekommt. Wenn eh ein Fehler vorliegt,
@@ -392,8 +391,8 @@ void checkValues() {
 
   delay(10); //seltsam, sonst wird 'message = okMessage' nicht korrekt ausgeführt
   
-  root["rs"]=relayStatus;
-  root["d"]=debug;
+  doc["rs"]=relayStatus;
+  doc["d"]=debug;
 
   //Konfigzeit pruefen, bei Ablauf Wert prüfen und ggfls. speichern
   if(pegelSet && (millis() - setPegelLimit) >= KONFIG_TIME) {
@@ -439,16 +438,18 @@ void checkValues() {
     if(message.length()>MAX_LINE_LENGTH) {
       message=F("Nachricht zu lang, entfernt");
     }
-    root["ht"]=THYST;
-    root["hp"]=PHYST;
+    doc["ht"]=THYST;
+    doc["hp"]=PHYST;
     
-    root["m"]=message;
+    doc["m"]=message;
     if(send) {
       if(debug) {
-        root.prettyPrintTo(Serial);
+        serializeJsonPretty(doc, Serial);
+        //root.prettyPrintTo(Serial);
         Serial.println(F("\n______________________"));
       }
-      root.printTo(mySerial);
+      serializeJson(doc, mySerial);
+      //root.printTo(mySerial);
     }
   }
   
