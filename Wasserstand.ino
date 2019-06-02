@@ -107,9 +107,9 @@ void handleEvent2(AceButton*, uint8_t, uint8_t);
 
 const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Relaisumschaltung vergangen, warte...";
 
-volatile int pegelIndex=0;
+volatile int pegelIndex=-1;
 volatile float pegelBuffer[10];
-volatile float pegel;
+volatile float pegel = -1.0;
 
 void setup() {
 
@@ -592,14 +592,10 @@ ISR(TIMER1_COMPA_vect) {
 
   word distance = (read_buffer[01] * 0xff) + read_buffer[02];
 
-  //float pegel ist volatile und wird aus loop() gelesen, TODO set von 10 Werten bilden und nur Mittelwert verarbeiten
-  pegelIndex++;
-  if(pegelIndex>=10) pegelIndex=0;
-
   float newVal = distance/10.0;
 
   if(debug2) {
-    Serial.print("\n________________________________________________");
+    Serial.println("\n________________________________________________");
     Serial.print("Frisch Gelesener Wert: ");
     Serial.println(newVal);
     Serial.print("Letzter Pegel: ");
@@ -613,22 +609,34 @@ ISR(TIMER1_COMPA_vect) {
       }
     }    
   }
+  
+  //first init
+  if(pegel < 0){
+     if(debug2) {
+        Serial.print("\nInitializing Pegel to ");
+        Serial.println(newVal);
+     }
+     pegel = newVal;  
+  }
 
   if(newVal > (pegel + 1)) {
     newVal = pegel + 1;
     if(debug2) {
-      Serial.print("Limiting max Pegel change to ");
+      Serial.print("\nLimiting max Pegel change to ");
       Serial.println(newVal);
     }
   }
   if(newVal < (pegel - 1)) {
     newVal = pegel -1;
     if(debug2) {
-      Serial.print("Limiting min Pegel change to ");
+      Serial.print("\nLimiting min Pegel change to ");
       Serial.println(newVal);
     }
   }
-  
+
+  //float pegel ist volatile und wird aus loop() gelesen, TODO set von 10 Werten bilden und nur Mittelwert verarbeiten
+  pegelIndex++;
+  if(pegelIndex>=10) pegelIndex=0;
   pegelBuffer[pegelIndex] = newVal;
 
   float total = 0.0;
