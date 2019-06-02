@@ -59,7 +59,8 @@ byte read_buffer[4];
 byte crcCalc;
 
 
-bool debug = true;
+bool debug = false;
+bool debug2 = true;
 
 ButtonConfig buttonConfig1;
 AceButton button1(&buttonConfig1);
@@ -601,9 +602,17 @@ ISR(TIMER1_COMPA_vect) {
   //      dann logge min-1 oder max+1
   float min = 10000;
   float max = -10000;
+
+  if(debug2) {
+    Serial.print("IndexedValues: ");
+  }
   for(int k=0; k<10; k++) {
     int v = pegelBuffer[k];
     if(v > 0) {
+      if(debug2) {
+        Serial.print(newVal);
+        Serial.print(", ");
+      }      
       if(v > max) {
         max = v;
       }
@@ -612,16 +621,23 @@ ISR(TIMER1_COMPA_vect) {
       }
     }
   }
+ if(debug2) {
+    Serial.println("______");
+    Serial.print("Max: ");
+    Serial.println(max);
+    Serial.print("Min: ");
+    Serial.println(min);
+  }
   if(newVal > (max + 1)) {
     newVal = max + 1;
-    if(debug) {
+    if(debug2) {
       Serial.print("Limiting max value change  to ");
       Serial.println(newVal);
     }
   }
   if(newVal < (min -1)) {
     newVal = min -1;
-    if(debug) {
+    if(debug2) {
       Serial.print("Limiting min value change  to ");
       Serial.println(newVal);
     }
@@ -641,7 +657,7 @@ ISR(TIMER1_COMPA_vect) {
   //Mittelwert bilden
   pegel = total / 10;
 
-  if(debug) {
+  if(debug2) {
     Serial.print(pegel,1);
     Serial.println(" cm");
   }
