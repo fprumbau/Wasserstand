@@ -602,14 +602,17 @@ ISR(TIMER1_COMPA_vect) {
     Serial.println(pegel);    
     Serial.print("\nIndexedValues: ");
     for(int k=0; k<10; k++) {
-      int v = pegelBuffer[k];
+      float v = pegelBuffer[k];
       if(v > 0) {
         Serial.print(v);
         Serial.print(", ");   
       }
     }    
   }
-  
+  if(debug2) {
+      Serial.print("\nPegelindex ");
+      Serial.println(pegelIndex);
+  }
   //first init
   if(pegel < 0){
      if(debug2) {
@@ -634,7 +637,7 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
 
-  //float pegel ist volatile und wird aus loop() gelesen, TODO set von 10 Werten bilden und nur Mittelwert verarbeiten
+  //float pegel ist volatile und wird aus loop() gelesen, Set von 10 Werten bilden und nur Mittelwert verarbeiten
   pegelIndex++;
   if(pegelIndex>=10) pegelIndex=0;
   pegelBuffer[pegelIndex] = newVal;
@@ -652,7 +655,7 @@ ISR(TIMER1_COMPA_vect) {
   pegel = total / 10;
 
   if(debug2) {
-    Serial.print("Neuer Pegel: ");
+    Serial.print("\nNeuer Pegel: ");
     Serial.print(pegel,1);
     Serial.println(" cm");
   }
