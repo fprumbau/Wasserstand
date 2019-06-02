@@ -15,7 +15,6 @@ using namespace ace_button;
 #define ECHO_PIN 5
 #define ARDUINO_RX 10
 #define ARDUINO_TX 11
-#define MAX_DIST 194 //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
 #define PHYST 3  //dann schaltet Relais wieder (z.B. bei Limit 67 wäre dies 67 + 3 = 70cm)
 #define THYST 2 //ist die Temperatur um 2Grad unter die Grenze gefallen, wird wieder eingeschaltet
 #define pinDHT22 7
@@ -27,6 +26,8 @@ using namespace ace_button;
 #define MAX_LINE_LENGTH 100
 #define LINE_1 0
 #define LINE_2 1
+
+int NIVEAU_UEBER_BODEN=194; //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -50,7 +51,7 @@ SimpleDHT22 dht22(pinDHT22);
 
 //fuer Standardsensor
 //#include <NewPing.h>
-//NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DIST);
+//NewPing sonar(TRIG_PIN, ECHO_PIN, NIVEAU_UEBER_BODEN);
 
 //Fuer DYP-ME007Y
 SoftwareSerial dypSerial = SoftwareSerial(ECHO_PIN, TRIG_PIN);
@@ -231,10 +232,10 @@ void checkValues() {
   //int cm = sonar.ping_cm();
 
   //DYP-ME007Y  
-  float rcm = MAX_DIST - pegel;
+  float rcm = NIVEAU_UEBER_BODEN - pegel;
 
   if(debug && pegel > 0) {
-    Serial.print("MAX_DIST-dst = ");
+    Serial.print("NIVEAU_UEBER_BODEN-dst = ");
     Serial.println(rcm);
   }
   
