@@ -604,13 +604,15 @@ ISR(TIMER1_COMPA_vect) {
   float max = -10000;
 
   if(debug2) {
-    Serial.print("IndexedValues: ");
+    Serial.print("Frisch Gelesener Wert: ");
+    Serial.println(newVal);
+    Serial.print("\nIndexedValues: ");
   }
   for(int k=0; k<10; k++) {
     int v = pegelBuffer[k];
     if(v > 0) {
       if(debug2) {
-        Serial.print(newVal);
+        Serial.print(v);
         Serial.print(", ");
       }      
       if(v > max) {
