@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=194; //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
+int NIVEAU_UEBER_BODEN=185; //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -59,7 +59,7 @@ byte read_buffer[4];
 byte crcCalc;
 
 
-bool debug = false;
+bool debug = true;
 
 ButtonConfig buttonConfig1;
 AceButton button1(&buttonConfig1);
@@ -594,7 +594,40 @@ ISR(TIMER1_COMPA_vect) {
   //float pegel ist volatile und wird aus loop() gelesen, TODO set von 10 Werten bilden und nur Mittelwert verarbeiten
   pegelIndex++;
   if(pegelIndex>=10) pegelIndex=0;
-  pegelBuffer[pegelIndex] = distance/10.0;
+
+  float newVal = distance/10.0;
+
+  //todo: Aus vorhandenen Werten min und max ermitteln; wenn newVal kleiner als min-1 ODER groesser als max+1,
+  //      dann logge min-1 oder max+1
+  float min = 10000;
+  float max = -10000;
+  for(int k=0; k<10; k++) {
+    int v = pegelBuffer[k];
+    if(v > 0) {
+      if(v > max) {
+        max = v;
+      }
+      if(v < min) {
+        min = v;
+      }
+    }
+  }
+  if(newVal > (max + 1)) {
+    newVal = max + 1;
+    if(debug) {
+      Serial.print("Limiting max value change  to ");
+      Serial.println(newVal);
+    }
+  }
+  if(newVal < (min -1)) {
+    newVal = min -1;
+    if(debug) {
+      Serial.print("Limiting min value change  to ");
+      Serial.println(newVal);
+    }
+  }
+  
+  pegelBuffer[pegelIndex] = newVal;
 
   float total = 0.0;
   for(int i = 0; i<10; i++) {
