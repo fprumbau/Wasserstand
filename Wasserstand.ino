@@ -109,7 +109,7 @@ const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Rel
 
 volatile int pegelIndex=-1;
 volatile float pegelBuffer[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-volatile float pegel = -1.0;
+volatile float pegel = -1;
 
 void setup() {
 
@@ -236,9 +236,9 @@ void checkValues() {
     Serial.println(rcm);
   }
   
-  byte pegel = (byte) rcm;
+  byte wasserstand = (byte) rcm;
 
-  doc["p"]=pegel;
+  doc["p"]=wasserstand;
   doc["PL"]=PLIM;
 
   bool send = false;
