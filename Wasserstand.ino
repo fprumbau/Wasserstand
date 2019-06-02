@@ -598,49 +598,33 @@ ISR(TIMER1_COMPA_vect) {
 
   float newVal = distance/10.0;
 
-  //todo: Aus vorhandenen Werten min und max ermitteln; wenn newVal kleiner als min-1 ODER groesser als max+1,
-  //      dann logge min-1 oder max+1
-  float min = 10000;
-  float max = -10000;
-
   if(debug2) {
+    Serial.print("\n________________________________________________");
     Serial.print("Frisch Gelesener Wert: ");
     Serial.println(newVal);
+    Serial.print("Letzter Pegel: ");
+    Serial.println(pegel);    
     Serial.print("\nIndexedValues: ");
-  }
-  for(int k=0; k<10; k++) {
-    int v = pegelBuffer[k];
-    if(v > 0) {
-      if(debug2) {
+    for(int k=0; k<10; k++) {
+      int v = pegelBuffer[k];
+      if(v > 0) {
         Serial.print(v);
-        Serial.print(", ");
-      }      
-      if(v > max) {
-        max = v;
+        Serial.print(", ");   
       }
-      if(v < min) {
-        min = v;
-      }
-    }
+    }    
   }
- if(debug2) {
-    Serial.println("______");
-    Serial.print("Max: ");
-    Serial.println(max);
-    Serial.print("Min: ");
-    Serial.println(min);
-  }
-  if(newVal > (max + 1)) {
-    newVal = max + 1;
+
+  if(newVal > (pegel + 1)) {
+    newVal = pegel + 1;
     if(debug2) {
-      Serial.print("Limiting max value change  to ");
+      Serial.print("Limiting max Pegel change to ");
       Serial.println(newVal);
     }
   }
-  if(newVal < (min -1)) {
-    newVal = min -1;
+  if(newVal < (pegel - 1)) {
+    newVal = pegel -1;
     if(debug2) {
-      Serial.print("Limiting min value change  to ");
+      Serial.print("Limiting min Pegel change to ");
       Serial.println(newVal);
     }
   }
@@ -660,6 +644,7 @@ ISR(TIMER1_COMPA_vect) {
   pegel = total / 10;
 
   if(debug2) {
+    Serial.print("Neuer Pegel: ");
     Serial.print(pegel,1);
     Serial.println(" cm");
   }
