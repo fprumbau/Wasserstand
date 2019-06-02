@@ -105,6 +105,8 @@ void handleEvent2(AceButton*, uint8_t, uint8_t);
 
 const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Relaisumschaltung vergangen, warte...";
 
+volatile int pegelIndex=0;
+volatile float pegelBuffer[10];
 volatile float pegel;
 
 void setup() {
@@ -162,6 +164,10 @@ void setup() {
   lastHell = millis();
   lastCheckValues = lastHell;
   lastRelaisAction = lastHell;
+
+  for(int i = 0; i<10; i++) {
+    pegelBuffer[i] = 0;
+  }
 }
   
 void loop() {
@@ -584,8 +590,22 @@ ISR(TIMER1_COMPA_vect) {
 
   word distance = (read_buffer[01] * 0xff) + read_buffer[02];
 
-  //pegel ist volatile und wird aus loop() gelesen
-  pegel = distance/10.0;
+  //float pegel ist volatile und wird aus loop() gelesen, TODO set von 10 Werten bilden und nur Mittelwert verarbeiten
+  pegelIndex++;
+  if(pegelIndex>=10) pegelIndex=0;
+  pegelBuffer[pegelIndex] = distance/10.0;
+
+  float total = 0.0;
+  for(int i = 0; i<10; i++) {
+    float val = pegelBuffer[i];
+    if(val > 0) {
+      total += val;
+    } else {
+      total += pegelBuffer[0];
+    }
+  }
+  //Mittelwert bilden
+  pegel = total / 10;
 
   if(debug) {
     Serial.print(pegel,1);
