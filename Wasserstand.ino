@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=154; //korrigiert von 350 (Wasserstand gemessen: 71cm)
+int NIVEAU_UEBER_BODEN=136; //korrigiert von 350 (Wasserstand gemessen: 71cm)
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -228,6 +228,9 @@ void checkValues() {
 
   //Standardsensor
   //int cm = sonar.ping_cm();
+
+  Serial.print("Pegel: ");
+  Serial.println(pegel);
 
   //DYP-ME007Y  
   float rcm = NIVEAU_UEBER_BODEN - pegel;
