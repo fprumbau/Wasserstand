@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=185; //korrigiert von 350 (Wasserstand gemessen: 118cm, Abstand gemessen 78cm)
+int NIVEAU_UEBER_BODEN=154; //korrigiert von 350 (Wasserstand gemessen: 71cm)
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -60,7 +60,7 @@ byte crcCalc;
 
 
 bool debug = false;
-bool debug2 = true;
+bool debug2 = false;
 
 ButtonConfig buttonConfig1;
 AceButton button1(&buttonConfig1);
@@ -81,6 +81,7 @@ unsigned long setPegelLimit = 0;
 //Eingestellter Wert des neuen Pegellimits, der nach der Konfigzeit ggfls übernommen wird
 uint8_t tmpPegelLimit = 0;
 bool pegelOk = true;
+int buff=50;
 
 //Temperaturlimitkonfiguration ist aktiv
 bool tempSet = false;
@@ -108,7 +109,7 @@ void handleEvent2(AceButton*, uint8_t, uint8_t);
 const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Relaisumschaltung vergangen, warte...";
 
 volatile int pegelIndex=-1;
-volatile float pegelBuffer[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+volatile float pegelBuffer[50] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 };
 volatile float pegel = -1;
 
 void setup() {
@@ -590,6 +591,12 @@ ISR(TIMER1_COMPA_vect) {
 
   float newVal = distance/10.0;
 
+  //pegel = newVal;
+  //return;
+
+//Serial.print("Frisch Gelesener Wert: ");
+  //  Serial.println(newVal);
+  
   if(debug2) {
     Serial.println("\n________________________________________________");
     Serial.print("Frisch Gelesener Wert: ");
@@ -597,7 +604,7 @@ ISR(TIMER1_COMPA_vect) {
     Serial.print("Letzter Pegel: ");
     Serial.println(pegel);    
     Serial.print("\nIndexedValues: ");
-    for(int k=0; k<10; k++) {
+    for(int k=0; k<buff; k++) {
       float v = pegelBuffer[k];
       Serial.print(v);
       Serial.print(", ");   
@@ -624,20 +631,20 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
   if(newVal < (pegel - 1)) {
-    newVal = pegel -1;
+    newVal = pegel - 1;
     if(debug2) {
       Serial.print("\nLimiting min Pegel change to ");
       Serial.println(newVal);
     }
   }
 
-  //float pegel ist volatile und wird aus loop() gelesen, Set von 10 Werten bilden und nur Mittelwert verarbeiten
+  //float pegel ist volatile und wird aus loop() gelesen, Set von 50 Werten bilden und nur Mittelwert verarbeiten
   pegelIndex++;
-  if(pegelIndex>=10) pegelIndex=0;
+  if(pegelIndex>=buff) pegelIndex=0;
   pegelBuffer[pegelIndex] = newVal;
 
   float total = 0.0;
-  for(int i = 0; i<10; i++) {
+  for(int i = 0; i<buff; i++) {
     float val = pegelBuffer[i];
     if(val > 0) {
       total += val;
@@ -646,12 +653,11 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
   //Mittelwert bilden
-  pegel = total / 10;
+  pegel = total / buff;
 
   if(debug2) {
     Serial.print("\nNeuer Pegel: ");
     Serial.print(pegel,1);
-    Serial.println(" cm");
   }
 
   //alle inzwischen wieder aufgelaufenen Messungen verwerfen
