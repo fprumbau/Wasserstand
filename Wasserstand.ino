@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=136; //korrigiert von 350 (Wasserstand gemessen: 71cm)
+int NIVEAU_UEBER_BODEN=158; //korrigiert von (Wasserstand gemessen: 71cm .. 57cm)
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -49,15 +49,16 @@ String oldLine2 = "";
 SimpleDHT22 dht22(pinDHT22);
 
 
-//fuer Standardsensor
-//#include <NewPing.h>
-//NewPing sonar(TRIG_PIN, ECHO_PIN, NIVEAU_UEBER_BODEN);
+//fuer Standardsensor / JSN-SR04T
+#include <NewPing.h>
+#include <MedianFilter.h>
+NewPing sonar(TRIG_PIN, ECHO_PIN, NIVEAU_UEBER_BODEN);
+MedianFilter filter(31,0);
 
-//Fuer DYP-ME007Y
-SoftwareSerial dypSerial = SoftwareSerial(ECHO_PIN, TRIG_PIN);
-byte read_buffer[4];
-byte crcCalc;
-
+//Fuer DYP-ME007Y (scheint fuer Wasser nicht zu funktionieren)
+//SoftwareSerial dypSerial = SoftwareSerial(ECHO_PIN, TRIG_PIN);
+//byte read_buffer[4];
+//byte crcCalc;
 
 bool debug = false;
 bool debug2 = false;
@@ -108,23 +109,17 @@ void handleEvent2(AceButton*, uint8_t, uint8_t);
 
 const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Relaisumschaltung vergangen, warte...";
 
-volatile int pegelIndex=-1;
-volatile float pegelBuffer[50] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 };
 volatile float pegel = -1;
 
 void setup() {
 
-  initInterruptTimer1();
-
   Serial.begin(115200); //USB
   mySerial.begin(19200); //NodeMCU8266
-  dypSerial.begin(9600); //DYP-ME007Y
 
-  for (byte loopstep = 0; loopstep <= 3; loopstep++) {
-    read_buffer[loopstep] = 0;
-  }
+  //JSN-SR05-T
+  pinMode(ECHO_PIN, INPUT_PULLUP);
 
-  Serial.println(F("Version 1.0.3"));
+  Serial.println(F("Version 1.0.4"));
 
   Serial.print(F("Pegellimit vorher: "));
   Serial.println(PLIM);
@@ -216,6 +211,17 @@ void loop() {
       oldLine2=""; //Zurücksetzen, um neues Refresh zu erwirken.
     }
   }
+
+  unsigned int pcm = sonar.ping_cm(); //Send ping, get ping time in microsoeconds
+  if(pcm>0) {
+    filter.in(pcm);
+    pegel = filter.out();
+    if(debug2) {
+      Serial.println("\n________________________________________________");
+      Serial.print("Frisch Gelesener Wert: ");
+      Serial.println(pegel);   
+    }
+  }
 }
 
 void checkValues() { 
@@ -226,13 +232,6 @@ void checkValues() {
     Serial.print("+");
   }
 
-  //Standardsensor
-  //int cm = sonar.ping_cm();
-
-  Serial.print("Pegel: ");
-  Serial.println(pegel);
-
-  //DYP-ME007Y  
   float rcm = NIVEAU_UEBER_BODEN - pegel;
 
   if(debug && pegel > 0) {
@@ -534,138 +533,6 @@ void handleEvent2(AceButton* /* button */, uint8_t eventType, uint8_t /* buttonS
         setTempLimit = millis();
       }
       break;   
-  }
-}
-
-void initInterruptTimer1() {
-  cli(); //disable interrupts
-  TCCR1A = 0; //set TCCR1A register to 0
-  TCCR1B = 0; //set TCCR1B register to 0
-  TCNT1 = 0; //reset counter value
-  //62499 == 4s
-  OCR1A = 7750; //compare match register, ca. 0.5s
-  TCCR1B |= (1 << CS12) | (1 << CS10); //set prescaler
-  TCCR1B |= (1 << WGM12); //turn on CTC mode
-  TIMSK1 |= (1 << OCIE1A);//enable timer compare input
-   sei(); //allow inputs
-}
-
-//function wird aufgerufen wenn ein interrupt auf timer 1 passiert
-ISR(TIMER1_COMPA_vect) { 
-
-  /**
-   * Every time an output module containing four eight data frame format is : 
-    0XFF + H_DATA + L_DATA + SUM
-    1. 0XFF: for a start of data for judgment.
-    2. H_DATA: distance data of eight high .
-    3. L_DATA: low distance data of eight .
-    4. SUM: data and for efficacy . Its 0XFF + H_DATA + L_DATA = SUM ( only 
-    low 8 )
-    5. H_DATA and L_DATA synthetic 16 data , the distance value in 
-    millimeters .
-   */
-   if (dypSerial.available() < 1) {
-    return;
-  }
-  
-  //Es werden immer 4 Byte uebertragen, beginnend mit 0xff
-  while (dypSerial.available() > 0) {
-    read_buffer[00] = dypSerial.read();
-    if (read_buffer[00] != 0xff) {
-      continue; 
-    };
-    if(dypSerial.available() > 0) {
-      read_buffer[01] = dypSerial.read(); 
-    }
-    if(dypSerial.available() > 0) {
-      read_buffer[02] = dypSerial.read(); 
-    }
-    if(dypSerial.available() > 0) {
-      read_buffer[03] = dypSerial.read(); 
-    }
-  }
-  
-  crcCalc = read_buffer[00] + read_buffer[01] + read_buffer[02];
-  if (read_buffer[03] != crcCalc) {
-    return; 
-  };
-
-  word distance = (read_buffer[01] * 0xff) + read_buffer[02];
-
-  float newVal = distance/10.0;
-
-  //pegel = newVal;
-  //return;
-
-//Serial.print("Frisch Gelesener Wert: ");
-  //  Serial.println(newVal);
-  
-  if(debug2) {
-    Serial.println("\n________________________________________________");
-    Serial.print("Frisch Gelesener Wert: ");
-    Serial.println(newVal);
-    Serial.print("Letzter Pegel: ");
-    Serial.println(pegel);    
-    Serial.print("\nIndexedValues: ");
-    for(int k=0; k<buff; k++) {
-      float v = pegelBuffer[k];
-      Serial.print(v);
-      Serial.print(", ");   
-    }    
-  }
-  if(debug2) {
-      Serial.print("\nPegelindex ");
-      Serial.println(pegelIndex);
-  }
-  //first init
-  if(pegel < 0){
-     if(debug2) {
-        Serial.print("\nInitializing Pegel to ");
-        Serial.println(newVal);
-     }
-     pegel = newVal;  
-  }
-
-  if(newVal > (pegel + 1)) {
-    newVal = pegel + 1;
-    if(debug2) {
-      Serial.print("\nLimiting max Pegel change to ");
-      Serial.println(newVal);
-    }
-  }
-  if(newVal < (pegel - 1)) {
-    newVal = pegel - 1;
-    if(debug2) {
-      Serial.print("\nLimiting min Pegel change to ");
-      Serial.println(newVal);
-    }
-  }
-
-  //float pegel ist volatile und wird aus loop() gelesen, Set von 50 Werten bilden und nur Mittelwert verarbeiten
-  pegelIndex++;
-  if(pegelIndex>=buff) pegelIndex=0;
-  pegelBuffer[pegelIndex] = newVal;
-
-  float total = 0.0;
-  for(int i = 0; i<buff; i++) {
-    float val = pegelBuffer[i];
-    if(val > 0) {
-      total += val;
-    } else {
-      total += pegelBuffer[0];
-    }
-  }
-  //Mittelwert bilden
-  pegel = total / buff;
-
-  if(debug2) {
-    Serial.print("\nNeuer Pegel: ");
-    Serial.print(pegel,1);
-  }
-
-  //alle inzwischen wieder aufgelaufenen Messungen verwerfen
-  while (dypSerial.available() > 0) {
-    dypSerial.read();
   }
 }
 
