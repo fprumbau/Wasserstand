@@ -65,7 +65,7 @@ ButtonConfig buttonConfig2;
 AceButton button2(&buttonConfig2);
 
 unsigned long lastCheckValues=0;
-unsigned long checkInterval = 5000;
+unsigned long checkInterval = 3000;
 
 //Konfigurationszeitraum in Millis
 unsigned long KONFIG_TIME=10000;
