@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=158; //korrigiert von (Wasserstand gemessen: 71cm .. 57cm)
+int NIVEAU_UEBER_BODEN=187; //korrigiert von (Wasserstand gemessen: 60cm, Abstand zum Wasser 1,25m  )
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
@@ -55,11 +55,6 @@ SimpleDHT22 dht22(pinDHT22);
 NewPing sonar(TRIG_PIN, ECHO_PIN, NIVEAU_UEBER_BODEN);
 MedianFilter filter(31,0);
 
-//Fuer DYP-ME007Y (scheint fuer Wasser nicht zu funktionieren)
-//SoftwareSerial dypSerial = SoftwareSerial(ECHO_PIN, TRIG_PIN);
-//byte read_buffer[4];
-//byte crcCalc;
-
 bool debug = false;
 bool debug2 = false;
 
@@ -70,7 +65,7 @@ ButtonConfig buttonConfig2;
 AceButton button2(&buttonConfig2);
 
 unsigned long lastCheckValues=0;
-unsigned long checkInterval = 1000;
+unsigned long checkInterval = 5000;
 
 //Konfigurationszeitraum in Millis
 unsigned long KONFIG_TIME=10000;
@@ -109,12 +104,12 @@ void handleEvent2(AceButton*, uint8_t, uint8_t);
 
 const char* minRelActionMessage = "@ Es sind noch keine 30s seit der letzten Relaisumschaltung vergangen, warte...";
 
-volatile float pegel = -1;
+volatile int pegel = -1;
 
 void setup() {
 
   Serial.begin(115200); //USB
-  mySerial.begin(19200); //NodeMCU8266
+  mySerial.begin(9600); //NodeMCU8266
 
   //JSN-SR05-T
   pinMode(ECHO_PIN, INPUT_PULLUP);
@@ -211,20 +206,19 @@ void loop() {
       oldLine2=""; //Zurücksetzen, um neues Refresh zu erwirken.
     }
   }
+}
+
+void checkValues() { 
 
   unsigned int pcm = sonar.ping_cm(); //Send ping, get ping time in microsoeconds
   if(pcm>0) {
     filter.in(pcm);
     pegel = filter.out();
     if(debug2) {
-      Serial.println("\n________________________________________________");
-      Serial.print("Frisch Gelesener Wert: ");
-      Serial.println(pegel);   
+      Serial.print(pegel);
+      Serial.println("cm");   
     }
   }
-}
-
-void checkValues() { 
 
   StaticJsonDocument<300> doc; //letzte Zaehlung: 114
 
@@ -448,7 +442,7 @@ void checkValues() {
     doc["ht"]=THYST;
     doc["hp"]=PHYST;
     
-    doc["m"]=message;
+    doc["m"]=message;    
     if(send) {
       if(debug) {
         serializeJsonPretty(doc, Serial);
