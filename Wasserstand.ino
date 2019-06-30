@@ -56,7 +56,7 @@ NewPing sonar(TRIG_PIN, ECHO_PIN, NIVEAU_UEBER_BODEN);
 MedianFilter filter(31,0);
 
 bool debug = false;
-bool debug2 = false;
+bool debug2 = true;
 
 ButtonConfig buttonConfig1;
 AceButton button1(&buttonConfig1);
