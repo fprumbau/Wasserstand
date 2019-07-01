@@ -57,6 +57,7 @@ MedianFilter filter(31,0);
 
 bool debug = false;
 bool debug2 = true;
+int count = 0; //zaehlt bei jedem Send eines JSon-Datensatzes hoch
 
 ButtonConfig buttonConfig1;
 AceButton button1(&buttonConfig1);
@@ -65,7 +66,7 @@ ButtonConfig buttonConfig2;
 AceButton button2(&buttonConfig2);
 
 unsigned long lastCheckValues=0;
-unsigned long checkInterval = 3000;
+unsigned long checkInterval = 4000;
 
 //Konfigurationszeitraum in Millis
 unsigned long KONFIG_TIME=10000;
@@ -109,12 +110,12 @@ volatile int pegel = -1;
 void setup() {
 
   Serial.begin(115200); //USB
-  mySerial.begin(9600); //NodeMCU8266
+  mySerial.begin(19200); //NodeMCU8266
 
   //JSN-SR05-T
   pinMode(ECHO_PIN, INPUT_PULLUP);
 
-  Serial.println(F("Version 1.0.4"));
+  Serial.println(F("Version 1.0.5"));
 
   Serial.print(F("Pegellimit vorher: "));
   Serial.println(PLIM);
@@ -237,6 +238,7 @@ void checkValues() {
 
   doc["p"]=wasserstand;
   doc["PL"]=PLIM;
+  doc["count"]=count++;
 
   bool send = false;
   bool skipCheckTemperature = false;
