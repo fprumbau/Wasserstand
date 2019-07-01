@@ -32,8 +32,8 @@ int NIVEAU_UEBER_BODEN=187; //korrigiert von (Wasserstand gemessen: 60cm, Abstan
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
 
-int PLIM = 66; //cm Wasser, wenn der Sensor 350cm über Grund aufgehängt wurde
-int TLIM = 40; //Grad Celsius
+int PLIM = 15; //cm Wasser, wenn der Sensor 350cm über Grund aufgehängt wurde
+int TLIM = 30; //Grad Celsius
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display  
 unsigned long lastHell = -1;
@@ -200,12 +200,6 @@ void loop() {
         debug = false;
       }
     }
-    if(c == '@') {
-      Serial.println(F("Neuer Client fordert Datenrefresh, an"));
-      //@datarequest, neuer Client hat sich connected, es sollten neue Daten gesendet werden
-      oldLine1=""; //Zurücksetzen, um neues Refresh zu erwirken.
-      oldLine2=""; //Zurücksetzen, um neues Refresh zu erwirken.
-    }
   }
 }
 
@@ -238,9 +232,8 @@ void checkValues() {
 
   doc["p"]=wasserstand;
   doc["PL"]=PLIM;
-  doc["count"]=count++;
+  doc["ct"]=count++;
 
-  bool send = false;
   bool skipCheckTemperature = false;
 
   String message = "";
@@ -278,7 +271,6 @@ void checkValues() {
           digitalWrite(relay, relayStatus);
           lastRelaisAction=millis();
           message = okMessage;
-          send = true;
           skipCheckTemperature = true; //damit message nicht ueberschrieben wird!
         }
       }
@@ -386,7 +378,6 @@ void checkValues() {
           digitalWrite(relay, relayStatus);
           lastRelaisAction=millis();
           message=okMessage;
-          send = true;
         }    
       }
     }
@@ -431,29 +422,23 @@ void checkValues() {
     //Pegel schreiben (int rcm)
     if(s1 != oldLine1) {
       lcdStr(LINE_1, s1);
-      send=true;
     }  
     //Temperatur schreiben ( byte temperature )
     if(s2 != oldLine2) {
       lcdStr(LINE_2, s2);
-      send=true;
     }
     if(message.length()>MAX_LINE_LENGTH) {
       message=F("Nachricht zu lang, entfernt");
     }
     doc["ht"]=THYST;
-    doc["hp"]=PHYST;
-    
+    doc["hp"]=PHYST;    
     doc["m"]=message;    
-    if(send) {
-      if(debug) {
-        serializeJsonPretty(doc, Serial);
-        //root.prettyPrintTo(Serial);
-        Serial.println(F("\n______________________"));
-      }
-      serializeJson(doc, mySerial);
-      //root.printTo(mySerial);
+
+    if(debug) {
+      serializeJsonPretty(doc, Serial);
+      Serial.println(F("\n______________________"));
     }
+    serializeJson(doc, mySerial);    
   }
   
 }
