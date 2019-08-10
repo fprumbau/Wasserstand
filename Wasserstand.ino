@@ -27,7 +27,7 @@ using namespace ace_button;
 #define LINE_1 0
 #define LINE_2 1
 
-int NIVEAU_UEBER_BODEN=187; //korrigiert von (Wasserstand gemessen: 60cm, Abstand zum Wasser 1,25m  )
+int NIVEAU_UEBER_BODEN=159; //korrigiert von (Wasserstand gemessen: 60cm, Abstand zum Wasser 1,25m  )
 
 //EEPROM is good 100.000 write /erase cycles
 // 3,3ms per write; Uno == 1024 bytes, Mega == 4096 bytes
